@@ -97,7 +97,11 @@ express()
       .pipe(tap(() => console.log("subTexts endpoint failed, retrying...")),
       mapTo(subTextsError))),
         map((subTextsRes) => createResults(textToSearchRes.data["text"], subTextsRes.data["subTexts"]))))
-    ).subscribe((result) => res.send(result), (err) => console.log(err))
+    )
+    .pipe(
+      mergeMap((searchResult) => defer(() => from(axios.post(submitUrl, searchResult))))
+      )
+    .subscribe((submitResponse) => res.send(submitResponse.data), (err) => console.log(err))
     })
   .listen(9999, () => console.log(`Listening on 9999`))
 
