@@ -33,7 +33,6 @@ const submitUrl = "https://join.reckon.com/test2/submitResults"
 
  const gettextToSearch = () => from(axios.get(textToSearchUrl));
  const getsubTexts = () => from(axios.get(subTextsUrl));
- const postSubmit = (body) => from(axios.post(submitUrl));
 
  const findSubText = (pattern, textToSearch) => {
 
@@ -99,7 +98,14 @@ express()
         map((subTextsRes) => createResults(textToSearchRes.data["text"], subTextsRes.data["subTexts"]))))
     )
     .pipe(
-      mergeMap((searchResult) => defer(() => from(axios.post(submitUrl, searchResult))))
+      mergeMap((searchResult) => defer(() => from(axios.post(submitUrl, searchResult)))
+      .pipe(
+        retryWhen((submitError) => submitError
+      .pipe(tap(() => console.log("submitResponse endpoint failed, retrying...")),
+      mapTo(submitError))),
+        )
+      
+      )
       )
     .subscribe((submitResponse) => res.send(submitResponse.data), (err) => console.log(err))
     })
